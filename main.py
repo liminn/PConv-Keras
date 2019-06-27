@@ -21,7 +21,6 @@ from matplotlib.ticker import NullFormatter
 from libs.pconv_model import PConvUnet
 from libs.util import MaskGenerator
 
-
 # Sample call
 r"""
 # Train on CelebaHQ
@@ -41,19 +40,19 @@ def parse_args():
 
     parser.add_argument(
         '-train', '--train',
-        type=str,
+        type=str,default='/home/datalab/ex_disk2/tianliu/data/places2_split/train',
         help='Folder with training images'
     )
     
     parser.add_argument(
         '-validation', '--validation',
-        type=str,
+        type=str,default='/home/datalab/ex_disk2/tianliu/data/places2_split/val',
         help='Folder with validation images'
     )
 
     parser.add_argument(
         '-test', '--test',
-        type=str,
+        type=str, default='/home/datalab/ex_disk2/tianliu/data/places2_split/test',
         help='Folder with testing images'
     )
         
@@ -98,9 +97,14 @@ def parse_args():
         type=str, 
         help='Previous weights to be loaded onto model'
     )
-        
-    return  parser.parse_args()
+    
+    parser.add_argument(
+        '-epochs', '--epochs',
+        type=int, default=50,
+        help='training epoch'
+    )
 
+    return  parser.parse_args()
 
 class AugmentingDataGenerator(ImageDataGenerator):
     """Wrapper for ImageDataGenerator to return mask & image"""
@@ -117,7 +121,7 @@ class AugmentingDataGenerator(ImageDataGenerator):
                 mask_generator.sample(seed)
                 for _ in range(ori.shape[0])], axis=0
             )
-
+            
             # Apply masks to all image sample
             masked = deepcopy(ori)
             masked[mask==0] = 1
@@ -129,6 +133,15 @@ class AugmentingDataGenerator(ImageDataGenerator):
 
 # Run script
 if __name__ == '__main__':
+    """
+    #train phase_1
+    python3 main.py --stage 'train' --epochs 50 
+    
+    #train phase_2
+    python3 main.py --stage 'finetune' --checkpoint 'xxx' --epochs 50
+    """
+    
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
     # Parse command-line arguments
     args = parse_args()
@@ -171,7 +184,7 @@ if __name__ == '__main__':
         batch_size=args.batch_size, 
         seed=42
     )
-
+    
     # Pick out an example to be send to test samples folder
     test_data = next(test_generator)
     (masked, mask), ori = test_data
@@ -216,15 +229,15 @@ if __name__ == '__main__':
         steps_per_epoch=10000,
         validation_data=val_generator,
         validation_steps=1000,
-        epochs=100,  
+        epochs=args.epochs,  
         verbose=0,
         callbacks=[
             TensorBoard(
-                log_dir=os.path.join(args.log_path, args.name+'_phase1'),
+                log_dir=os.path.join(args.log_path, args.name+'_'+args.stage),
                 write_graph=False
             ),
             ModelCheckpoint(
-                os.path.join(args.log_path, args.name+'_phase1', 'weights.{epoch:02d}-{loss:.2f}.h5'),
+                os.path.join(args.log_path, args.name+'_'+args.stage, 'weights.{epoch:02d}-{loss:.2f}.h5'),
                 monitor='val_loss', 
                 save_best_only=True, 
                 save_weights_only=True
@@ -235,4 +248,4 @@ if __name__ == '__main__':
             TQDMCallback()
         ]
     )
-        
+

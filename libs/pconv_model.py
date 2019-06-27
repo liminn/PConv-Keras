@@ -15,7 +15,6 @@ from keras.utils.multi_gpu_utils import multi_gpu_model
 
 from libs.pconv_layer import PConv2D
 
-
 class PConvUnet(object):
 
     def __init__(self, img_rows=512, img_cols=512, vgg_weights="imagenet", inference_only=False, net_name='default', gpus=1, vgg_device=None):

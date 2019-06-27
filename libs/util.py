@@ -40,7 +40,7 @@ class MaskGenerator():
         """Generates a random irregular mask with lines, circles and elipses"""
 
         img = np.zeros((self.height, self.width, self.channels), np.uint8)
-
+        
         # Set size scale
         size = int((self.width + self.height) * 0.03)
         if self.width < 64 or self.height < 64:
